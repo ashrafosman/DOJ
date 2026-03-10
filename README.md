@@ -127,7 +127,7 @@ Produced by the pipeline's data quality and deduplication stages.
 
 ## Deployed App — Feature Guide
 
-The Databricks App at https://doj-migration-monitor-7474651760554125.aws.databricksapps.com provides the following views:
+The Databricks App at https://doj-migration-monitor.aws.databricksapps.com provides the following views:
 
 | View | Description |
 |------|-------------|
