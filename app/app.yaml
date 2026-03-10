@@ -1,0 +1,15 @@
+command: ["python", "run.py"]
+
+env:
+  - name: DATABRICKS_HOST
+    value: "https://fevm-oregon-doj-demo.cloud.databricks.com"
+  - name: DEMO_MODE
+    value: "false"
+  - name: CATALOG
+    value: "oregon_doj_demo_catalog"
+  - name: WAREHOUSE_ID
+    value: "a9e6255f0e48dafa"
+  - name: DATABRICKS_JOB_ID
+    value: "99898107790094"
+  - name: ADLS_UPLOAD_PATH
+    value: "/FileStore/doj-uploads"

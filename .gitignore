@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.env
+.venv
+.venv_test/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Node / Frontend
+node_modules/
+app/frontend/dist/
+app/frontend/.vite/
+
+# Databricks / IDE
+.databricks/
+*.DS_Store
+.idea/
+.vscode/
+
+# Secrets / credentials
+*.json.bak
+secrets/
+.env.local
+
+# Jupyter
+.ipynb_checkpoints/

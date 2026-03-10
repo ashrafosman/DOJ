@@ -1,0 +1,516 @@
+{
+  "schema_version": "1.0.0",
+  "source_system": "LEGACY_CASE",
+  "source_system_version": "v4.2",
+  "generated_at": "2024-03-12T14:22:00Z",
+  "generated_by": "doj-mapping-engine@pipeline.gov",
+  "approved_by": "j.rodriguez@doj.gov",
+  "approval_timestamp": "2024-03-14T09:45:00Z",
+  "job_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "description": "Approved field-level mappings for all three source systems: LegacyCaseManagement v4.2, OpenJustice CSV exports, and ad-hoc client/incident Excel extracts.",
+
+  "mappings": [
+
+    {
+      "source_table": "tbl_Defendant",
+      "source_column": "DEF_FULLNAME",
+      "source_data_type": "NVARCHAR(255)",
+      "target_table": "Stg_Contact",
+      "target_column": "FullName",
+      "target_data_type": "NVARCHAR(255)",
+      "confidence": 0.97,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "STRING_TRIM"
+      },
+      "rationale": "Exact semantic match. Source field stores defendant full name in 'LAST, FIRST MIDDLE' format matching the target convention.",
+      "reviewer": "j.rodriguez@doj.gov",
+      "review_timestamp": "2024-03-14T09:45:00Z",
+      "reviewer_note": "Confirmed format matches Stg_Contact FullName convention after reviewing 2000 sample rows.",
+      "is_pii": true,
+      "pii_handling": "PASSTHROUGH",
+      "nullable": false,
+      "tags": ["identity", "name"]
+    },
+
+    {
+      "source_table": "tbl_Defendant",
+      "source_column": "DEF_SSN",
+      "source_data_type": "CHAR(11)",
+      "target_table": "Stg_Contact",
+      "target_column": "SSN_Hash",
+      "target_data_type": "CHAR(64)",
+      "confidence": 0.97,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "SHA256_HASH"
+      },
+      "rationale": "SSN must be hashed with SHA-256 before landing in the staging table per DOJ data-at-rest policy DG-2023-14. Hash is stored as 64-character uppercase hex.",
+      "reviewer": "j.rodriguez@doj.gov",
+      "review_timestamp": "2024-03-14T09:45:00Z",
+      "reviewer_note": "Verified SHA-256 hash function applied. Dashes stripped from SSN prior to hashing.",
+      "is_pii": true,
+      "pii_handling": "HASH",
+      "nullable": true,
+      "tags": ["identity", "pii", "sensitive"]
+    },
+
+    {
+      "source_table": "tbl_Defendant",
+      "source_column": "DEF_DOB",
+      "source_data_type": "NVARCHAR(20)",
+      "target_table": "Stg_Contact",
+      "target_column": "DOB",
+      "target_data_type": "DATE",
+      "confidence": 0.93,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "DATE_PARSE",
+        "date_format": "MM/dd/yyyy"
+      },
+      "rationale": "Source stores date of birth as a string in MM/dd/yyyy format. Confidence slightly below 1.0 because a small proportion of records use yyyyMMdd (pre-2001 entries) — handled by the COALESCE fallback in the transform.",
+      "reviewer": "j.rodriguez@doj.gov",
+      "review_timestamp": "2024-03-14T09:48:00Z",
+      "reviewer_note": "Confirmed fallback parse handles legacy yyyyMMdd format. Null where parse fails.",
+      "is_pii": true,
+      "pii_handling": "PASSTHROUGH",
+      "nullable": true,
+      "tags": ["identity", "pii", "date"]
+    },
+
+    {
+      "source_table": "tbl_Defendant",
+      "source_column": "RACE_CODE",
+      "source_data_type": "CHAR(2)",
+      "target_table": "Stg_Contact",
+      "target_column": "RaceCode",
+      "target_data_type": "NVARCHAR(20)",
+      "confidence": 0.82,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "LOOKUP",
+        "lookup_table": "ref_race_codes",
+        "lookup_source_col": "legacy_code",
+        "lookup_target_col": "nibrs_code"
+      },
+      "rationale": "Legacy system uses a 2-char race code (B, W, H, A, N, O, U) that must be mapped to NIBRS race codes. Confidence 0.82 because code 'O' (Other) maps to multiple NIBRS values depending on context — escalated 43 unmapped values to reconciliation queue.",
+      "reviewer": "m.thompson@doj.gov",
+      "review_timestamp": "2024-03-14T11:30:00Z",
+      "reviewer_note": "Code 'O' default-mapped to NIBRS 'U' (Unknown) per SME guidance from DA office. 43 records manually reviewed.",
+      "is_pii": false,
+      "nullable": true,
+      "tags": ["race-ethnicity", "nibrs", "demographics"]
+    },
+
+    {
+      "source_table": "tbl_Defendant",
+      "source_column": "SEX_CODE",
+      "source_data_type": "CHAR(1)",
+      "target_table": "Stg_Contact",
+      "target_column": "GenderCode",
+      "target_data_type": "NVARCHAR(10)",
+      "confidence": 0.95,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "LOOKUP",
+        "lookup_table": "ref_gender_codes",
+        "lookup_source_col": "legacy_code",
+        "lookup_target_col": "standard_code"
+      },
+      "rationale": "Source uses M/F/U. Target accepts M/F/X/U. Direct lookup with high confidence. 'U' (Unknown) passes through unchanged.",
+      "reviewer": "j.rodriguez@doj.gov",
+      "review_timestamp": "2024-03-14T09:50:00Z",
+      "is_pii": false,
+      "nullable": true,
+      "tags": ["demographics", "gender"]
+    },
+
+    {
+      "source_table": "tbl_Case",
+      "source_column": "CASE_NO",
+      "source_data_type": "NVARCHAR(50)",
+      "target_table": "Stg_Case",
+      "target_column": "CaseNumber",
+      "target_data_type": "NVARCHAR(100)",
+      "confidence": 0.97,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "STRING_TRIM"
+      },
+      "rationale": "Direct 1:1 mapping of the primary case docket number. Trimmed to remove legacy trailing whitespace.",
+      "reviewer": "j.rodriguez@doj.gov",
+      "review_timestamp": "2024-03-14T09:51:00Z",
+      "is_pii": false,
+      "nullable": false,
+      "tags": ["case-identity"]
+    },
+
+    {
+      "source_table": "tbl_Case",
+      "source_column": "CASE_TYPE_ID",
+      "source_data_type": "INT",
+      "target_table": "Stg_Case",
+      "target_column": "CaseTypeCode",
+      "target_data_type": "NVARCHAR(50)",
+      "confidence": 0.88,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "LOOKUP",
+        "lookup_table": "ref_case_type_codes",
+        "lookup_source_col": "legacy_id",
+        "lookup_target_col": "jn_case_type_code"
+      },
+      "rationale": "Legacy case type is an integer FK to a reference table. 95% of values map cleanly to JN case type codes. 12 legacy codes have no direct JN equivalent and were mapped to UNKNOWN pending SME review.",
+      "reviewer": "m.thompson@doj.gov",
+      "review_timestamp": "2024-03-14T11:35:00Z",
+      "reviewer_note": "12 unmapped codes reviewed — 10 mapped to CIVIL-OTHER, 2 escalated to policy team.",
+      "is_pii": false,
+      "nullable": false,
+      "tags": ["case-classification"]
+    },
+
+    {
+      "source_table": "tbl_Case",
+      "source_column": "FILE_DATE",
+      "source_data_type": "DATETIME",
+      "target_table": "Stg_Case",
+      "target_column": "FilingDate",
+      "target_data_type": "DATE",
+      "confidence": 0.96,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "CAST",
+        "cast_to_type": "DATE"
+      },
+      "rationale": "Source stores a full DATETIME; target requires DATE only. Time component is discarded. Confidence high as the date portion is always populated.",
+      "reviewer": "j.rodriguez@doj.gov",
+      "review_timestamp": "2024-03-14T09:52:00Z",
+      "is_pii": false,
+      "nullable": true,
+      "tags": ["date", "case-dates"]
+    },
+
+    {
+      "source_table": "tbl_Case",
+      "source_column": "JURISDICTION_CODE",
+      "source_data_type": "CHAR(5)",
+      "target_table": "Stg_Case",
+      "target_column": "JurisdictionCode",
+      "target_data_type": "NVARCHAR(50)",
+      "confidence": 0.91,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "LOOKUP",
+        "lookup_table": "ref_jurisdiction_codes",
+        "lookup_source_col": "legacy_code",
+        "lookup_target_col": "fips_code"
+      },
+      "rationale": "Maps legacy 5-char jurisdiction codes to FIPS county codes. 91% match rate; 9% of legacy codes are historical districts no longer in FIPS — mapped to nearest current code by geography lookup.",
+      "reviewer": "m.thompson@doj.gov",
+      "review_timestamp": "2024-03-14T11:40:00Z",
+      "is_pii": false,
+      "nullable": true,
+      "tags": ["geography", "jurisdiction"]
+    },
+
+    {
+      "source_table": "tbl_Event",
+      "source_column": "EVT_TYPE_CODE",
+      "source_data_type": "NVARCHAR(20)",
+      "target_table": "Stg_Code_EventType",
+      "target_column": "TargetCode",
+      "target_data_type": "NVARCHAR(50)",
+      "confidence": 0.85,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "LOOKUP",
+        "lookup_table": "ref_event_type_codes",
+        "lookup_source_col": "legacy_evt_code",
+        "lookup_target_col": "jn_event_code"
+      },
+      "rationale": "Maps legacy event type codes (HRNG, DISP, SENT, MOTF, etc.) to JN event taxonomy. 85% confidence because 6 legacy codes lack a direct JN equivalent.",
+      "reviewer": "j.rodriguez@doj.gov",
+      "review_timestamp": "2024-03-14T09:54:00Z",
+      "is_pii": false,
+      "nullable": false,
+      "tags": ["events", "case-activity"]
+    },
+
+    {
+      "source_table": "arrests",
+      "source_column": "RACE",
+      "source_data_type": "VARCHAR(50)",
+      "target_table": "Stg_Contact",
+      "target_column": "RaceCode",
+      "target_data_type": "NVARCHAR(20)",
+      "confidence": 0.78,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "LOOKUP",
+        "lookup_table": "ref_oj_race_codes",
+        "lookup_source_col": "oj_label",
+        "lookup_target_col": "nibrs_code"
+      },
+      "rationale": "OpenJustice uses verbose race labels (e.g. 'Hispanic or Latino', 'Black or African American') rather than codes. Fuzzy label matching with 0.78 confidence; 'Other' and 'Unknown' labels contribute to lower confidence. Multi-racial category not representable in NIBRS — defaulted to primary race with reviewer note.",
+      "reviewer": "m.thompson@doj.gov",
+      "review_timestamp": "2024-03-14T12:00:00Z",
+      "reviewer_note": "Multi-racial label (37 records) mapped to most common reported race per OJ documentation. Escalation noted in reconciliation issues.",
+      "is_pii": false,
+      "nullable": true,
+      "tags": ["race-ethnicity", "nibrs", "open-justice"]
+    },
+
+    {
+      "source_table": "arrests",
+      "source_column": "AGE_GROUP",
+      "source_data_type": "VARCHAR(20)",
+      "target_table": "Stg_Contact",
+      "target_column": "DOB",
+      "target_data_type": "DATE",
+      "confidence": 0.61,
+      "status": "ESCALATED",
+      "transformation": {
+        "type": "CUSTOM_EXPRESSION",
+        "expression": "CASE AGE_GROUP WHEN 'JUVENILE' THEN date_sub(current_date(), 15*365) WHEN '18-24' THEN date_sub(current_date(), 21*365) ELSE NULL END"
+      },
+      "rationale": "OpenJustice only provides age brackets, not exact DOB. The transform approximates a midpoint DOB for statistical purposes only. Confidence 0.61 because the approximation is not suitable for legal records — escalated for policy review.",
+      "reviewer": null,
+      "review_timestamp": null,
+      "reviewer_note": null,
+      "is_pii": true,
+      "pii_handling": "PASSTHROUGH",
+      "nullable": true,
+      "tags": ["age", "pii", "open-justice", "low-confidence"]
+    },
+
+    {
+      "source_table": "arrests",
+      "source_column": "COUNTY",
+      "source_data_type": "VARCHAR(100)",
+      "target_table": "Stg_Case",
+      "target_column": "CountyFIPS",
+      "target_data_type": "CHAR(5)",
+      "confidence": 0.89,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "LOOKUP",
+        "lookup_table": "ref_county_fips",
+        "lookup_source_col": "county_name",
+        "lookup_target_col": "fips_code"
+      },
+      "rationale": "OpenJustice provides county names; target requires 5-digit FIPS codes. Name-to-FIPS lookup resolves 89% of values. 11% have spelling variants addressed by fuzzy match with threshold 0.85.",
+      "reviewer": "j.rodriguez@doj.gov",
+      "review_timestamp": "2024-03-14T12:05:00Z",
+      "is_pii": false,
+      "nullable": true,
+      "tags": ["geography", "fips", "open-justice"]
+    },
+
+    {
+      "source_table": "arrests",
+      "source_column": "F_TOTAL",
+      "source_data_type": "INT",
+      "target_table": "Stg_Case",
+      "target_column": "CaseNumber",
+      "target_data_type": "NVARCHAR(100)",
+      "confidence": 0.79,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "CUSTOM_EXPRESSION",
+        "expression": "CONCAT('OJ-', LPAD(CAST(F_TOTAL AS STRING), 8, '0'))"
+      },
+      "rationale": "OpenJustice does not include a primary case number. F_TOTAL (federal total offense count index) is used as a surrogate key with an OJ- prefix to avoid collision with other source systems.",
+      "reviewer": "m.thompson@doj.gov",
+      "review_timestamp": "2024-03-14T12:08:00Z",
+      "reviewer_note": "Surrogate key strategy approved by data governance. Uniqueness validated against existing Stg_Case records.",
+      "is_pii": false,
+      "nullable": false,
+      "tags": ["case-identity", "surrogate-key", "open-justice"]
+    },
+
+    {
+      "source_table": "arrests",
+      "source_column": "F_DRUGOFF",
+      "source_data_type": "INT",
+      "target_table": "Stg_Code_CaseType",
+      "target_column": "TargetCode",
+      "target_data_type": "NVARCHAR(50)",
+      "confidence": 0.86,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "CUSTOM_EXPRESSION",
+        "expression": "CASE WHEN F_DRUGOFF > 0 THEN 'DRUG_OFFENSE' ELSE 'NON_DRUG' END"
+      },
+      "rationale": "F_DRUGOFF is a count of drug-related offenses in the OpenJustice aggregate. A non-zero value indicates the case should be tagged as DRUG_OFFENSE in the JN case type reference table.",
+      "reviewer": "j.rodriguez@doj.gov",
+      "review_timestamp": "2024-03-14T12:10:00Z",
+      "is_pii": false,
+      "nullable": true,
+      "tags": ["case-classification", "drug-offense", "open-justice"]
+    },
+
+    {
+      "source_table": "Client",
+      "source_column": "ClientFullName",
+      "source_data_type": "NVARCHAR(200)",
+      "target_table": "Stg_Contact",
+      "target_column": "FullName",
+      "target_data_type": "NVARCHAR(255)",
+      "confidence": 0.94,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "STRING_TRIM"
+      },
+      "rationale": "Ad-hoc export field maps directly to FullName. Format is 'First Last' (reversed from the LegacyCase convention) — transform normalises to 'LAST, FIRST' before writing.",
+      "reviewer": "j.rodriguez@doj.gov",
+      "review_timestamp": "2024-03-14T12:15:00Z",
+      "reviewer_note": "Name reversal transformation validated on 500 sample records. Edge cases with hyphenated names handled correctly.",
+      "is_pii": true,
+      "pii_handling": "PASSTHROUGH",
+      "nullable": false,
+      "tags": ["identity", "name", "adhoc"]
+    },
+
+    {
+      "source_table": "Client",
+      "source_column": "SSN",
+      "source_data_type": "NVARCHAR(11)",
+      "target_table": "Stg_Contact",
+      "target_column": "SSN_Hash",
+      "target_data_type": "CHAR(64)",
+      "confidence": 0.97,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "SHA256_HASH"
+      },
+      "rationale": "Same SHA-256 hash policy as LegacyCase. Dashes stripped before hashing to ensure consistent fingerprints across source systems.",
+      "reviewer": "j.rodriguez@doj.gov",
+      "review_timestamp": "2024-03-14T12:16:00Z",
+      "is_pii": true,
+      "pii_handling": "HASH",
+      "nullable": true,
+      "tags": ["identity", "pii", "sensitive", "adhoc"]
+    },
+
+    {
+      "source_table": "Incident",
+      "source_column": "IncidentNumber",
+      "source_data_type": "NVARCHAR(50)",
+      "target_table": "Stg_Case",
+      "target_column": "AgencyCaseNumber",
+      "target_data_type": "NVARCHAR(100)",
+      "confidence": 0.92,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "STRING_TRIM"
+      },
+      "rationale": "Ad-hoc export incident numbers correspond to agency-level case identifiers. Mapped to AgencyCaseNumber rather than CaseNumber to preserve the court/agency distinction.",
+      "reviewer": "m.thompson@doj.gov",
+      "review_timestamp": "2024-03-14T12:20:00Z",
+      "is_pii": false,
+      "nullable": false,
+      "tags": ["case-identity", "adhoc"]
+    },
+
+    {
+      "source_table": "Incident",
+      "source_column": "IncidentDate",
+      "source_data_type": "NVARCHAR(30)",
+      "target_table": "Stg_Case",
+      "target_column": "IncidentDate",
+      "target_data_type": "DATE",
+      "confidence": 0.88,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "DATE_PARSE",
+        "date_format": "M/d/yyyy"
+      },
+      "rationale": "Ad-hoc Excel exports store dates as strings with single-digit month/day (no zero-padding). Java date format M/d/yyyy handles both '1/5/2023' and '12/15/2023'.",
+      "reviewer": "j.rodriguez@doj.gov",
+      "review_timestamp": "2024-03-14T12:22:00Z",
+      "reviewer_note": "3% of records have free-text date descriptions (e.g. 'Early Jan 2023') — these are set to null with a reconciliation issue raised.",
+      "is_pii": false,
+      "nullable": true,
+      "tags": ["date", "case-dates", "adhoc"]
+    },
+
+    {
+      "source_table": "Incident",
+      "source_column": "OffenseCategory",
+      "source_data_type": "NVARCHAR(100)",
+      "target_table": "Stg_Code_CaseType",
+      "target_column": "TargetCode",
+      "target_data_type": "NVARCHAR(50)",
+      "confidence": 0.83,
+      "status": "APPROVED",
+      "transformation": {
+        "type": "LOOKUP",
+        "lookup_table": "ref_adhoc_offense_category",
+        "lookup_source_col": "offense_label",
+        "lookup_target_col": "jn_case_type_code"
+      },
+      "rationale": "Ad-hoc export uses free-text offense category labels. Fuzzy match against JN case type vocabulary achieves 83% confidence. Low-confidence matches queued for reconciliation review.",
+      "reviewer": "m.thompson@doj.gov",
+      "review_timestamp": "2024-03-14T12:25:00Z",
+      "reviewer_note": "21 unmapped offense categories resolved in reconciliation queue. Final mapping table updated in ref_adhoc_offense_category.",
+      "is_pii": false,
+      "nullable": true,
+      "tags": ["case-classification", "adhoc", "fuzzy-match"]
+    }
+  ],
+
+  "global_transformations": [
+    {
+      "type": "STRING_TRIM"
+    },
+    {
+      "type": "UPPERCASE"
+    }
+  ],
+
+  "validation_rules": [
+    {
+      "rule_id": "NNL_CONTACT_SOURCEID",
+      "target_table": "Stg_Contact",
+      "target_column": "SourceId",
+      "rule_type": "NOT_NULL",
+      "severity": "ERROR",
+      "description": "Every contact staging record must carry the originating system's primary key."
+    },
+    {
+      "rule_id": "NNL_CASE_NUMBER",
+      "target_table": "Stg_Case",
+      "target_column": "CaseNumber",
+      "rule_type": "NOT_NULL",
+      "severity": "ERROR",
+      "description": "Every staged case must have a case number."
+    },
+    {
+      "rule_id": "RNG_CONFIDENCE",
+      "target_table": "Stg_Code_CaseType",
+      "target_column": "ConfidenceScore",
+      "rule_type": "RANGE",
+      "severity": "WARNING",
+      "parameters": { "min": 0.0, "max": 1.0 },
+      "description": "Confidence scores must fall within [0, 1]."
+    },
+    {
+      "rule_id": "RGX_FIPS",
+      "target_table": "Stg_Case",
+      "target_column": "CountyFIPS",
+      "rule_type": "REGEX",
+      "severity": "WARNING",
+      "parameters": { "pattern": "^\\d{5}$" },
+      "description": "CountyFIPS must be a 5-digit string if populated."
+    },
+    {
+      "rule_id": "RGX_SSN_HASH",
+      "target_table": "Stg_Contact",
+      "target_column": "SSN_Hash",
+      "rule_type": "REGEX",
+      "severity": "ERROR",
+      "parameters": { "pattern": "^[A-F0-9]{64}$" },
+      "description": "SSN_Hash must be a 64-character uppercase hex string (SHA-256)."
+    }
+  ]
+}

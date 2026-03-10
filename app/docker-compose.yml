@@ -1,0 +1,106 @@
+# =============================================================================
+# DOJ Data Migration — Local Development Docker Compose
+#
+# Usage:
+#   cp .env.example .env          # fill in real values
+#   docker compose up --build
+#
+# Services:
+#   backend   FastAPI with hot-reload on http://localhost:8000
+#   frontend  Vite dev server on http://localhost:5173 (proxies /api → backend)
+# =============================================================================
+
+version: "3.9"
+
+# ---------------------------------------------------------------------------
+# Shared environment variable reference
+# (copy to .env and populate before running)
+# ---------------------------------------------------------------------------
+# DATABRICKS_HOST=https://adb-<workspace-id>.azuredatabricks.net
+# DATABRICKS_TOKEN=<personal-access-token-or-service-principal-secret>
+# WAREHOUSE_ID=<sql-warehouse-id>
+# DATABRICKS_JOB_ID=<migration-orchestration-job-numeric-id>
+# ADLS_UPLOAD_PATH=/mnt/doj-landing/uploads
+# AUTH_ENABLED=false
+# AZURE_TENANT_ID=<entra-id-tenant-guid>
+# AZURE_CLIENT_ID=<app-registration-client-id>
+# DEMO_MODE=true
+# ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+# LOG_LEVEL=info
+
+services:
+
+  # --------------------------------------------------------------------------
+  # Backend — FastAPI + uvicorn with hot reload
+  # --------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: doj-migration-backend:dev
+    container_name: doj-backend
+    command:
+      - python
+      - -m
+      - uvicorn
+      - backend.main:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --reload
+      - --reload-dir
+      - /app/backend
+      - --log-level
+      - "${LOG_LEVEL:-info}"
+    volumes:
+      # Mount source so --reload picks up changes without rebuilding
+      - ./backend:/app/backend:z
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      PYTHONUNBUFFERED: "1"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 20s
+      timeout: 8s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  # --------------------------------------------------------------------------
+  # Frontend — Vite dev server with API proxy
+  # --------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev   # created below; falls back gracefully
+      args:
+        NODE_ENV: development
+    image: doj-migration-frontend:dev
+    container_name: doj-frontend
+    # If a Dockerfile.dev does not yet exist, run inline with node image.
+    # Remove this 'image' override and use build context when ready.
+    # Override with a simple node image for rapid startup:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm ci --prefer-offline && npm run dev -- --host 0.0.0.0 --port 5173"
+    volumes:
+      - ./frontend:/app:z
+      - /app/node_modules   # anonymous volume keeps node_modules in container
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: "http://backend:8000"
+      NODE_ENV: development
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  default:
+    name: doj-migration-net

@@ -1,0 +1,354 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://doj.gov/migration/mapping-artifact/v1/schema.json",
+  "title": "DOJ Migration Mapping Artifact",
+  "description": "JSON Schema (draft-07) for the field-level mapping artifact produced by the DOJ data migration pipeline. Each artifact describes how columns in one or more source system tables map to columns in the Justice Nexus target staging schema.",
+  "type": "object",
+  "required": ["schema_version", "source_system", "generated_at", "generated_by", "mappings"],
+  "additionalProperties": false,
+
+  "properties": {
+
+    "schema_version": {
+      "type": "string",
+      "description": "Semantic version of this mapping artifact schema (NOT the source system version).",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": ["1.0.0", "1.2.3"]
+    },
+
+    "source_system": {
+      "type": "string",
+      "description": "Source system that produced the data being mapped.",
+      "enum": ["LEGACY_CASE", "OPEN_JUSTICE", "AD_HOC_EXPORTS"]
+    },
+
+    "source_system_version": {
+      "type": "string",
+      "description": "Optional version tag or export date of the source system extract.",
+      "examples": ["v4.2", "Q1_2024", "2024-01-15"]
+    },
+
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp when this mapping artifact was created."
+    },
+
+    "generated_by": {
+      "type": "string",
+      "description": "Username, service account, or pipeline component that authored this artifact.",
+      "minLength": 1
+    },
+
+    "approved_by": {
+      "type": ["string", "null"],
+      "description": "Username or UPN of the SME who gave final approval for this artifact.",
+      "default": null
+    },
+
+    "approval_timestamp": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp when the artifact was approved.",
+      "default": null
+    },
+
+    "job_id": {
+      "type": ["string", "null"],
+      "description": "Migration job ID (UUID) this artifact is associated with.",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "default": null
+    },
+
+    "description": {
+      "type": "string",
+      "description": "Human-readable summary of what this mapping artifact covers."
+    },
+
+    "mappings": {
+      "type": "array",
+      "description": "Ordered list of field-level mapping entries.",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/MappingEntry" }
+    },
+
+    "global_transformations": {
+      "type": "array",
+      "description": "Dataset-level transformations applied before field mappings (e.g. encoding normalisation).",
+      "items": { "$ref": "#/definitions/TransformationStep" },
+      "default": []
+    },
+
+    "validation_rules": {
+      "type": "array",
+      "description": "Post-mapping validation rules that must pass before promotion to the next layer.",
+      "items": { "$ref": "#/definitions/ValidationRule" },
+      "default": []
+    }
+  },
+
+  "definitions": {
+
+    "MappingEntry": {
+      "type": "object",
+      "description": "A single source→target field mapping with confidence metadata.",
+      "required": [
+        "source_table",
+        "source_column",
+        "target_table",
+        "target_column",
+        "confidence",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+
+        "source_table": {
+          "type": "string",
+          "description": "Source table name exactly as it appears in the extract.",
+          "minLength": 1,
+          "examples": ["tbl_Defendant", "arrests", "Client"]
+        },
+
+        "source_column": {
+          "type": "string",
+          "description": "Source column name exactly as it appears in the extract.",
+          "minLength": 1,
+          "examples": ["RACE_CODE", "SSN", "F_TOTAL"]
+        },
+
+        "source_data_type": {
+          "type": "string",
+          "description": "Data type of the source column (informational).",
+          "examples": ["VARCHAR(10)", "INT", "DATE", "NVARCHAR(255)"]
+        },
+
+        "target_table": {
+          "type": "string",
+          "description": "Target staging table in the Justice Nexus schema.",
+          "enum": [
+            "Stg_Contact",
+            "Stg_Case",
+            "Stg_Participant",
+            "Stg_Code_Jurisdiction",
+            "Stg_Code_CaseType",
+            "Stg_Code_EventType"
+          ]
+        },
+
+        "target_column": {
+          "type": "string",
+          "description": "Target column name in the Justice Nexus staging table.",
+          "minLength": 1,
+          "examples": ["RaceCode", "SSN_Hash", "CaseNumber", "FilingDate"]
+        },
+
+        "target_data_type": {
+          "type": "string",
+          "description": "Expected data type of the target column.",
+          "examples": ["NVARCHAR(20)", "CHAR(64)", "DATE", "BIT"]
+        },
+
+        "confidence": {
+          "type": "number",
+          "description": "ML or heuristic confidence score for this mapping (0.0 = no confidence, 1.0 = exact match).",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+
+        "status": {
+          "type": "string",
+          "description": "Review lifecycle status of this individual mapping.",
+          "enum": ["PENDING", "APPROVED", "REJECTED", "ESCALATED"]
+        },
+
+        "transformation": {
+          "$ref": "#/definitions/TransformationStep",
+          "description": "Optional value transformation to apply during mapping."
+        },
+
+        "rationale": {
+          "type": "string",
+          "description": "Explanation of how the mapping was derived and why the confidence score was assigned."
+        },
+
+        "reviewer": {
+          "type": ["string", "null"],
+          "description": "Username or UPN of the SME who reviewed this specific mapping.",
+          "default": null
+        },
+
+        "review_timestamp": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "ISO 8601 UTC timestamp when this mapping was reviewed.",
+          "default": null
+        },
+
+        "reviewer_note": {
+          "type": ["string", "null"],
+          "description": "Optional free-text note from the reviewer.",
+          "default": null
+        },
+
+        "is_pii": {
+          "type": "boolean",
+          "description": "Whether the source column contains personally identifiable information.",
+          "default": false
+        },
+
+        "pii_handling": {
+          "type": "string",
+          "description": "How PII is handled: HASH | ENCRYPT | MASK | SUPPRESS | PASSTHROUGH.",
+          "enum": ["HASH", "ENCRYPT", "MASK", "SUPPRESS", "PASSTHROUGH"],
+          "default": "PASSTHROUGH"
+        },
+
+        "nullable": {
+          "type": "boolean",
+          "description": "Whether a null source value is acceptable for this mapping.",
+          "default": true
+        },
+
+        "default_value": {
+          "type": ["string", "null"],
+          "description": "Value to use when the source column is null (only applied when nullable=false).",
+          "default": null
+        },
+
+        "tags": {
+          "type": "array",
+          "description": "Free-form tags for categorisation (e.g. 'race-ethnicity', 'geography').",
+          "items": { "type": "string" },
+          "uniqueItems": true,
+          "default": []
+        }
+      }
+    },
+
+    "TransformationStep": {
+      "type": "object",
+      "description": "Describes a data transformation to be applied to a column value.",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+
+        "type": {
+          "type": "string",
+          "description": "Transformation type.",
+          "enum": [
+            "LOOKUP",
+            "SHA256_HASH",
+            "DATE_PARSE",
+            "STRING_TRIM",
+            "UPPERCASE",
+            "LOWERCASE",
+            "REGEX_EXTRACT",
+            "CAST",
+            "COALESCE",
+            "CUSTOM_EXPRESSION"
+          ]
+        },
+
+        "lookup_table": {
+          "type": "string",
+          "description": "Reference table name for LOOKUP transformations.",
+          "examples": ["ref_race_codes", "ref_gender_codes"]
+        },
+
+        "lookup_source_col": {
+          "type": "string",
+          "description": "Column in the lookup table to match against the source value."
+        },
+
+        "lookup_target_col": {
+          "type": "string",
+          "description": "Column in the lookup table to return as the mapped value."
+        },
+
+        "date_format": {
+          "type": "string",
+          "description": "Source date format string for DATE_PARSE (Java / Spark format).",
+          "examples": ["MM/dd/yyyy", "yyyyMMdd", "yyyy-MM-dd HH:mm:ss"]
+        },
+
+        "regex_pattern": {
+          "type": "string",
+          "description": "Regular expression for REGEX_EXTRACT."
+        },
+
+        "regex_group": {
+          "type": "integer",
+          "description": "Capture group index to extract (1-based).",
+          "minimum": 0
+        },
+
+        "cast_to_type": {
+          "type": "string",
+          "description": "Target SQL/Spark type for CAST transformation.",
+          "examples": ["INT", "DATE", "DOUBLE", "BOOLEAN"]
+        },
+
+        "expression": {
+          "type": "string",
+          "description": "Spark SQL expression for CUSTOM_EXPRESSION transformations."
+        }
+      }
+    },
+
+    "ValidationRule": {
+      "type": "object",
+      "description": "A data quality rule evaluated after mapping is applied.",
+      "required": ["rule_id", "target_table", "target_column", "rule_type", "severity"],
+      "additionalProperties": false,
+      "properties": {
+
+        "rule_id": {
+          "type": "string",
+          "description": "Short identifier for the rule.",
+          "pattern": "^[A-Z0-9_]+$",
+          "examples": ["NNL_SSN_HASH", "RNG_CONFIDENCE", "REF_RACE_CODE"]
+        },
+
+        "target_table": {
+          "type": "string",
+          "description": "Table the rule applies to."
+        },
+
+        "target_column": {
+          "type": "string",
+          "description": "Column the rule evaluates."
+        },
+
+        "rule_type": {
+          "type": "string",
+          "enum": [
+            "NOT_NULL",
+            "UNIQUE",
+            "RANGE",
+            "REGEX",
+            "REFERENTIAL_INTEGRITY",
+            "CUSTOM_SQL"
+          ]
+        },
+
+        "severity": {
+          "type": "string",
+          "enum": ["ERROR", "WARNING", "INFO"],
+          "description": "How a violation should be treated: ERROR blocks promotion, WARNING raises an issue."
+        },
+
+        "parameters": {
+          "type": "object",
+          "description": "Rule-type-specific parameters (e.g. min/max for RANGE, pattern for REGEX).",
+          "additionalProperties": true
+        },
+
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of what this rule checks."
+        }
+      }
+    }
+  }
+}
