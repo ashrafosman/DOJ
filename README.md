@@ -155,10 +155,10 @@ Search queries both sources with a UNION and resolves profiles automatically bas
 
 | Variable | Value | Purpose |
 |----------|-------|---------|
-| `DATABRICKS_HOST` | `https://fevm-oregon-doj-demo.cloud.databricks.com` | Workspace URL |
+| `DATABRICKS_HOST` | `https://workspace.cloud.databricks.com` | Workspace URL |
 | `CATALOG` | `oregon_doj_demo_catalog` | Unity Catalog for all queries |
-| `WAREHOUSE_ID` | `a9e6255f0e48dafa` | Serverless SQL warehouse |
-| `DATABRICKS_JOB_ID` | `99898107790094` | Migration orchestration job |
+| `WAREHOUSE_ID` | `a111111111111111` | Serverless SQL warehouse |
+| `DATABRICKS_JOB_ID` | `11111111111111` | Migration orchestration job |
 | `ADLS_UPLOAD_PATH` | `/FileStore/doj-uploads` | DBFS staging path |
 | `DEMO_MODE` | `false` | Set `true` to use mock data |
 
