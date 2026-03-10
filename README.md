@@ -1,10 +1,7 @@
 # DOJ Data Migration Platform
 
-A production-grade data migration solution for the Oregon Department of Justice, built on Databricks. Migrates criminal justice case data from three legacy source systems into a unified Azure SQL staging database via a medallion architecture with AI-assisted schema mapping and an interactive operator dashboard.
+A production-grade data migration solution for the Department of Justice, built on Databricks. Migrates criminal justice case data from three legacy source systems into a unified Azure SQL staging database via a medallion architecture with AI-assisted schema mapping and an interactive operator dashboard.
 
-**Live app:** https://doj-migration-monitor-7474651760554125.aws.databricksapps.com
-**Workspace:** fevm-oregon-doj-demo.cloud.databricks.com
-**Unity Catalog:** `oregon_doj_demo_catalog`
 
 ## Architecture
 
