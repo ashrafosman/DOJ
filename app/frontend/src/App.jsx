@@ -8,6 +8,7 @@ import PipelineFlowCanvas from './components/PipelineFlowCanvas';
 import PipelineDashboard from './components/PipelineDashboard';
 import DataQualityBoard from './components/DataQualityBoard';
 import CaseIntelligence from './components/CaseIntelligence';
+import About from './components/About';
 
 // ─── Named Error Boundary (identifies which component failed) ────────────────
 class NamedErrorBoundary extends React.Component {
@@ -113,6 +114,14 @@ function IconCases({ className = 'w-5 h-5' }) {
   );
 }
 
+function IconInfo({ className = 'w-5 h-5' }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+    </svg>
+  );
+}
+
 function IconShield({ className = 'w-6 h-6' }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -156,6 +165,7 @@ function PageBreadcrumb() {
     '/dashboard': 'Pipeline Health Dashboard',
     '/quality': 'Data Quality Board',
     '/cases': 'Case Intelligence',
+    '/about': 'About',
   };
   return (
     <div className="flex items-center gap-2 text-xs text-doj-muted mb-1">
@@ -233,6 +243,9 @@ export default function App() {
                 <SideNavLink to="/upload" icon={IconUpload} label="Upload Files" />
                 <SideNavLink to="/review" icon={IconReview} label="Review Queue" badge={reviewBadge} />
                 <SideNavLink to="/cases" icon={IconCases} label="Case Intelligence" />
+
+                <div className="text-[10px] font-semibold uppercase tracking-widest text-doj-muted px-3 mt-4 mb-2">Info</div>
+                <SideNavLink to="/about" icon={IconInfo} label="About" />
               </nav>
 
               {/* System legend */}
@@ -279,6 +292,7 @@ export default function App() {
                   <Route path="/dashboard" element={<NamedErrorBoundary name="PipelineDashboard"><PipelineDashboard /></NamedErrorBoundary>} />
                   <Route path="/quality" element={<NamedErrorBoundary name="DataQualityBoard"><DataQualityBoard /></NamedErrorBoundary>} />
                   <Route path="/cases" element={<NamedErrorBoundary name="CaseIntelligence"><CaseIntelligence /></NamedErrorBoundary>} />
+                  <Route path="/about" element={<NamedErrorBoundary name="About"><About /></NamedErrorBoundary>} />
                 </Routes>
               </div>
             </main>

@@ -99,14 +99,14 @@ OPENJUSTICE_BASE = "https://data-openjustice.doj.ca.gov/sites/default/files/data
 
 # PII columns that must be tagged for data governance
 PII_TAG_MAP = {
-    "tbl_defendant": ["ssn", "dob", "first_name", "last_name", "middle_name", "address"],
-    "tbl_case":      [],
-    "tbl_event":     [],
-    "arrests":       ["first_name", "last_name", "dob", "race", "sex"],
-    "arrest_dispositions": ["first_name", "last_name", "dob"],
+    "tbl_defendant":       ["DOB", "FIRST_NAME", "LAST_NAME"],
+    "tbl_case":            [],
+    "tbl_event":           [],
+    "arrests":             ["RACE", "SEX"],
+    "arrest_dispositions": [],
     "crimes_clearances":   [],
-    "client":        ["ssn", "dob", "first_name", "last_name", "address", "phone", "email"],
-    "incident":      ["victim_name", "victim_dob", "victim_ssn"],
+    "client":              [],
+    "incident":            [],
 }
 
 # Seed for reproducible synthetic data
@@ -185,7 +185,7 @@ def tag_pii_columns(table_name: str, pii_columns: list) -> None:
                 f"""
                 ALTER TABLE {full_table}
                 ALTER COLUMN {col}
-                SET TAGS ('pii' = 'true', 'pii_category' = 'DOJ_SENSITIVE')
+                SET TAGS ('doj_pii' = 'true', 'doj_pii_category' = 'DOJ_SENSITIVE')
                 """
             )
             logger.info("Tagged PII column %s.%s", full_table, col)
