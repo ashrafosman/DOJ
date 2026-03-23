@@ -327,7 +327,9 @@ function OJContextSection({ ojContext }) {
 
 // ─── Quality Flags ────────────────────────────────────────────────────────────
 
-function QualityFlagsSection({ flags }) {
+function QualityFlagsSection({ flags, onSelectDefendant }) {
+  const [expanded, setExpanded] = useState({});
+
   if (!flags.length) {
     return (
       <div className="flex items-center gap-2 text-sm text-emerald-400">
@@ -340,24 +342,71 @@ function QualityFlagsSection({ flags }) {
   }
 
   const SEV_COLORS = {
-    CRITICAL: 'text-red-400 bg-red-500/10 border-red-500/30',
-    HIGH:     'text-orange-400 bg-orange-500/10 border-orange-500/30',
-    MEDIUM:   'text-amber-400 bg-amber-500/10 border-amber-500/30',
+    CRITICAL: { card: 'border-red-500/30 bg-red-500/10',    header: 'text-red-400',    badge: 'bg-red-500/20 text-red-300' },
+    HIGH:     { card: 'border-orange-500/30 bg-orange-500/10', header: 'text-orange-400', badge: 'bg-orange-500/20 text-orange-300' },
+    MEDIUM:   { card: 'border-amber-500/30 bg-amber-500/10', header: 'text-amber-400',  badge: 'bg-amber-500/20 text-amber-300' },
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {flags.map((f, i) => {
-        const colorClass = SEV_COLORS[f.severity] || 'text-doj-muted bg-white/5 border-doj-border';
+        const c = SEV_COLORS[(f.severity || '').toUpperCase()] || { card: 'border-doj-border bg-white/5', header: 'text-doj-muted', badge: 'bg-white/10 text-doj-muted' };
+        const ids = Array.isArray(f.all_defendant_ids) ? f.all_defendant_ids : [];
+        const isOpen = !!expanded[i];
+
         return (
-          <div key={i} className={`rounded p-3 border text-xs ${colorClass}`}>
-            <div className="flex items-center justify-between">
-              <span className="font-semibold">Duplicate Group: {f.duplicate_group_id}</span>
-              <span className="text-[10px] uppercase tracking-wider font-bold">{f.severity}</span>
+          <div key={i} className={`rounded-lg border text-xs ${c.card}`}>
+            {/* Header row */}
+            <div className={`flex items-center justify-between px-3 py-2.5 ${c.header}`}>
+              <div className="flex items-center gap-2">
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
+                </svg>
+                <span className="font-semibold">Duplicate Group: <span className="font-mono">{f.duplicate_group_id}</span></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${c.badge}`}>{f.severity}</span>
+                <span className="text-doj-muted">{f.total_records ?? ids.length} records</span>
+                {ids.length > 0 && (
+                  <button
+                    onClick={() => setExpanded(e => ({ ...e, [i]: !e[i] }))}
+                    className="flex items-center gap-1 text-[11px] text-doj-muted hover:text-doj-text transition-colors ml-1"
+                  >
+                    <svg className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                    {isOpen ? 'Hide' : 'Show'} records
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="mt-1 text-[11px] opacity-80">
-              {f.total_records} records in this group
-            </div>
+
+            {/* Expanded record list */}
+            {isOpen && ids.length > 0 && (
+              <div className="border-t border-inherit px-3 py-2 space-y-1">
+                <div className="text-[10px] text-doj-muted uppercase tracking-wider mb-2 font-semibold">
+                  Duplicate Records in Group
+                </div>
+                {ids.map((defId, j) => (
+                  <button
+                    key={j}
+                    onClick={() => onSelectDefendant && onSelectDefendant(defId)}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded bg-black/20 hover:bg-black/30 transition-colors group text-left"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-doj-muted w-4 text-right">{j + 1}.</span>
+                      <span className="font-mono text-[11px] text-doj-text">{defId}</span>
+                    </div>
+                    <span className="text-[10px] text-doj-muted group-hover:text-doj-blue transition-colors flex items-center gap-1">
+                      View profile
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                      </svg>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         );
       })}
@@ -475,7 +524,7 @@ export default function CaseIntelligence() {
 
             {/* Data Quality */}
             <Card title="Data Quality Flags" accent="#ef4444">
-              <QualityFlagsSection flags={profile.quality_flags} />
+              <QualityFlagsSection flags={profile.quality_flags} onSelectDefendant={(id) => loadProfile(id)} />
             </Card>
           </div>
 

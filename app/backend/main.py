@@ -2114,7 +2114,10 @@ if _frontend_dist.exists():
             return FileResponse(candidate)
         index_html = _frontend_dist / "index.html"
         if index_html.exists():
-            return FileResponse(index_html)
+            return FileResponse(
+                index_html,
+                headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
+            )
         raise HTTPException(status_code=404, detail="Frontend not built")
 
     logger.info("Serving frontend from %s", _frontend_dist)

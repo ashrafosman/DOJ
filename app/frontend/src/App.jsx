@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import GlobalStatusHeader from './components/GlobalStatusHeader';
 import IngestionStatusBoard from './components/IngestionStatusBoard';
@@ -122,6 +122,22 @@ function IconInfo({ className = 'w-5 h-5' }) {
   );
 }
 
+function IconSun({ className = 'w-4 h-4' }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+    </svg>
+  );
+}
+
+function IconMoon({ className = 'w-4 h-4' }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+    </svg>
+  );
+}
+
 function IconShield({ className = 'w-6 h-6' }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -178,10 +194,24 @@ function PageBreadcrumb() {
 
 // ─── Main App ────────────────────────────────────────────────────────────────
 export default function App() {
+  const [darkMode, setDarkMode] = useState(() => {
+    const stored = localStorage.getItem('doj-theme');
+    return stored ? stored === 'dark' : true;
+  });
   const [statusFilter, setStatusFilter] = useState('all');
   const [systemFilters, setSystemFilters] = useState(new Set(['LegacyCase', 'OpenJustice', 'AdHocExports']));
   const [reviewBadge, setReviewBadge] = useState(0);
   const [globalAlerts, setGlobalAlerts] = useState(0);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (darkMode) {
+      root.classList.remove('light');
+    } else {
+      root.classList.add('light');
+    }
+    localStorage.setItem('doj-theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
 
   const toggleSystem = useCallback((system) => {
     setSystemFilters(prev => {
@@ -224,10 +254,17 @@ export default function App() {
                   <div className="w-8 h-8 rounded bg-doj-blue/20 border border-doj-blue/40 flex items-center justify-center">
                     <IconShield className="w-4 h-4 text-doj-blue" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <div className="text-xs font-bold text-doj-text tracking-wider uppercase">DOJ</div>
                     <div className="text-[10px] text-doj-muted leading-tight">Data Migration</div>
                   </div>
+                  <button
+                    onClick={() => setDarkMode(d => !d)}
+                    className="p-1.5 rounded-md text-doj-muted hover:text-doj-text hover:bg-doj-surface-2 transition-colors"
+                    title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                  >
+                    {darkMode ? <IconSun /> : <IconMoon />}
+                  </button>
                 </div>
               </div>
 

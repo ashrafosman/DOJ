@@ -3,13 +3,31 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── Dark mode (default) ── */
   :root {
     color-scheme: dark;
+    --color-doj-bg:        15 17 23;
+    --color-doj-surface:   26 31 46;
+    --color-doj-surface-2: 35 40 56;
+    --color-doj-border:    45 55 72;
+    --color-doj-text:      241 245 249;
+    --color-doj-muted:     100 116 139;
+  }
+
+  /* ── Light mode ── */
+  :root.light {
+    color-scheme: light;
+    --color-doj-bg:        248 250 252;
+    --color-doj-surface:   255 255 255;
+    --color-doj-surface-2: 241 245 249;
+    --color-doj-border:    226 232 240;
+    --color-doj-text:      15 23 42;
+    --color-doj-muted:     100 116 139;
   }
 
   html {
-    background-color: #0f1117;
-    color: #f1f5f9;
+    background-color: rgb(var(--color-doj-bg));
+    color: rgb(var(--color-doj-text));
   }
 
   body {
@@ -24,16 +42,16 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: #0f1117;
+    background: rgb(var(--color-doj-bg));
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #2d3748;
+    background: rgb(var(--color-doj-border));
     border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #4a5568;
+    background: rgb(var(--color-doj-muted));
   }
 
   /* Focus ring */
@@ -44,7 +62,7 @@
   /* Selection color */
   ::selection {
     background-color: rgba(59, 130, 246, 0.3);
-    color: #f1f5f9;
+    color: rgb(var(--color-doj-text));
   }
 }
 
